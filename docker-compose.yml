@@ -1,0 +1,23 @@
+version: '3.9'
+
+services:
+  harness:
+    image: multi-agent-harness:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./workflows:/app/workflows:ro
+      - harness-data:/app/.harness
+    environment:
+      - NODE_ENV=production
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    profiles:
+      - daemon
+
+volumes:
+  harness-data:

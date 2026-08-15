@@ -1,0 +1,102 @@
+import type { CompletionOptions, HealthStatus, LLMChunk, LLMConfig, LLMMessage, LLMProvider, LLMResponse, UsageStats } from '../types.js';
+import { LLMError } from './provider.js';
+
+interface OpenRouterChoice {
+  message: { content?: string; tool_calls?: LLMResponse['toolCalls'] };
+}
+interface OpenRouterUsage {
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+}
+interface OpenRouterResponse {
+  choices: OpenRouterChoice[];
+  usage: OpenRouterUsage;
+}
+
+export class OpenRouterProvider implements LLMProvider {
+  readonly name = 'openrouter';
+  readonly models = ['anthropic/claude-3.5-sonnet', 'openai/gpt-4o', 'google/gemini-flash-1.5'];
+  private usage: UsageStats = { totalRequests: 0, totalTokens: 0, totalCostUsd: 0, errors: 0, byModel: {} };
+
+  constructor(public readonly config: LLMConfig) {}
+
+  private get baseUrl(): string {
+    return this.config.baseUrl ?? 'https://openrouter.ai/api/v1';
+  }
+
+  async complete(messages: LLMMessage[], options?: CompletionOptions): Promise<LLMResponse> {
+    const body: Record<string, unknown> = {
+      model: this.config.model,
+      messages: this.buildMessages(messages, options),
+      temperature: options?.temperature ?? this.config.temperature,
+      max_tokens: options?.maxTokens ?? this.config.maxTokens,
+    };
+    if (options?.tools && options.tools.length > 0) {
+      body['tools'] = options.tools.map((t) => ({ type: 'function', function: { name: t.name, description: t.description, parameters: t.parameters } }));
+      body['tool_choice'] = options.toolChoice ?? 'auto';
+    }
+    const res = await this.fetchWithTimeout(`${this.baseUrl}/chat/completions`, body);
+    if (!res.ok) {
+      const text = await res.text();
+      throw new LLMError(`OpenRouter error: ${text}`, 'openrouter', this.config.model, res.status);
+    }
+    const data = (await res.json()) as OpenRouterResponse;
+    const choice = data.choices[0]!;
+    const usage = data.usage;
+    this.trackUsage(usage.total_tokens);
+    return {
+      content: choice.message.content ?? '',
+      toolCalls: choice.message.tool_calls ?? undefined,
+      usage: { promptTokens: usage.prompt_tokens, completionTokens: usage.completion_tokens, totalTokens: usage.total_tokens },
+      model: this.config.model,
+    };
+  }
+
+  async *stream(_messages: LLMMessage[], _options?: CompletionOptions): AsyncIterable<LLMChunk> {
+    throw new Error('Streaming not yet implemented for OpenRouter provider');
+  }
+
+  async healthCheck(): Promise<HealthStatus> {
+    const start = Date.now();
+    try {
+      const res = await fetch(`${this.baseUrl}/models`, { headers: { Authorization: `Bearer ${this.config.apiKey}` } });
+      return { healthy: res.ok, latencyMs: Date.now() - start, lastChecked: new Date() };
+    } catch (e) {
+      return { healthy: false, latencyMs: Date.now() - start, error: e instanceof Error ? e.message : String(e), lastChecked: new Date() };
+    }
+  }
+
+  async getUsage(): Promise<UsageStats> {
+    return { ...this.usage, byModel: { ...this.usage.byModel } };
+  }
+
+  private buildMessages(messages: LLMMessage[], options?: CompletionOptions): LLMMessage[] {
+    const result: LLMMessage[] = [];
+    const sys = options?.systemPrompt ?? '';
+    if (sys) result.push({ role: 'system', content: sys });
+    for (const m of messages) {
+      if (m.role === 'system' && sys) continue;
+      result.push(m);
+    }
+    return result;
+  }
+
+  private async fetchWithTimeout(url: string, body: Record<string, unknown>): Promise<Response> {
+    return fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${this.config.apiKey}` },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(this.config.timeoutMs),
+    });
+  }
+
+  private trackUsage(tokens: number): void {
+    this.usage.totalRequests += 1;
+    this.usage.totalTokens += tokens;
+    const entry = this.usage.byModel[this.config.model] ?? { requests: 0, tokens: 0 };
+    entry.requests += 1;
+    entry.tokens += tokens;
+    this.usage.byModel[this.config.model] = entry;
+  }
+}

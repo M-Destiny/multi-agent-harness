@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.harness/
+coverage/
+*.log
+.env
+.DS_Store
+.git/
+.github/
+tests/
