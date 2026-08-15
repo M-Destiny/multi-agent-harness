@@ -4,3 +4,7 @@ export { MetricsCollector } from './metrics.js';
 export type { MetricValue, Counter, HistogramBucket } from './metrics.js';
 export { HealthManager } from './health.js';
 export type { ProviderHealth } from './health.js';
+export { PrometheusMetrics } from './prometheus.js';
+export { HealthServer } from './health-api.js';
+export { TracingService, tracing } from './tracing.js';
+export type { Span } from './tracing.js';
