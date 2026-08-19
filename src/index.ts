@@ -20,6 +20,11 @@ export { InMemoryStore } from './core/memory/memory-store.js';
 export { SqliteStore } from './core/memory/sqlite-store.js';
 export type { MemoryStore, MemorySnapshot } from './core/memory/store.js';
 
+// Checkpointer (Durable Execution)
+export { InMemoryCheckpointer } from './core/checkpointer/in-memory.js';
+export { SqliteCheckpointer } from './core/checkpointer/sqlite.js';
+export type { Checkpointer, Checkpoint, CheckpointMetadata } from './core/checkpointer/index.js';
+
 // LLM Providers
 export { OpenAIProvider } from './core/llm/openai.js';
 export { AnthropicProvider } from './core/llm/anthropic.js';

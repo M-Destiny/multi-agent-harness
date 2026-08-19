@@ -262,6 +262,32 @@ export abstract class BaseAgent {
   }
 }
 
+// ── Checkpointer (Durable Execution) ────────────────────────────────────────
+
+export interface CheckpointMetadata {
+  step: number;
+  timestamp: Date;
+  node?: string;
+  tags?: string[];
+  [key: string]: unknown;
+}
+
+export interface Checkpoint {
+  threadId: string;
+  checkpointId: string;
+  parentCheckpointId?: string;
+  state: unknown;
+  metadata: CheckpointMetadata;
+  createdAt: Date;
+}
+
+export interface Checkpointer {
+  get(threadId: string, checkpointId?: string): Promise<Checkpoint | null>;
+  put(checkpoint: Checkpoint): Promise<void>;
+  list(threadId: string): Promise<Checkpoint[]>;
+  delete(threadId: string): Promise<void>;
+}
+
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
 export function createTask(partial: Partial<Task> & { id: string; name: string; description: string }): Task {
