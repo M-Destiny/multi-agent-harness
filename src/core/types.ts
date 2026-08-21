@@ -288,6 +288,57 @@ export interface Checkpointer {
   delete(threadId: string): Promise<void>;
 }
 
+// ── StateGraph (Orchestration) ──────────────────────────────────────────────
+
+export type NodeFn<S> = (state: S) => Promise<Partial<S>>;
+
+export interface Edge {
+  from: string;
+  to: string;
+}
+
+export interface ConditionalEdge {
+  from: string;
+  route: (state: unknown) => string | string[];
+  pathMap: Record<string, string>;
+}
+
+export interface CompileOptions {
+  checkpointer?: Checkpointer;
+  interruptBefore?: string[];
+  interruptAfter?: string[];
+}
+
+export interface StateSnapshot<S> {
+  values: S;
+  next: string[];
+  tasks: unknown[];
+  metadata: Record<string, unknown>;
+}
+
+export interface GraphInterrupt extends Error {
+  threadId: string;
+  checkpointId: string;
+  interruptNode: string;
+  state: unknown;
+  status: 'interrupt_before' | 'interrupt_after';
+}
+
+export interface ResumeOptions {
+  threadId: string;
+  checkpointId: string;
+  editedState?: unknown;
+  editedStatePath?: string;
+}
+
+export interface GraphResult<S> {
+  state: S;
+  status: 'completed' | 'interrupted' | 'failed';
+  checkpointId?: string;
+  interruptNode?: string;
+  error?: Error;
+}
+
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
 export function createTask(partial: Partial<Task> & { id: string; name: string; description: string }): Task {
