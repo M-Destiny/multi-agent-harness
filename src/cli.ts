@@ -197,4 +197,103 @@ program
     if (!result.evaluation.passed) process.exit(1);
   });
 
+// ── resume (HITL) ────────────────────────────────────────────────────────────
+
+program
+  .command('resume <threadId>')
+  .description('Resume an interrupted workflow (HITL)')
+  .option('--edit-state', 'Open $EDITOR to edit state before resuming')
+  .option('--state-json <json>', 'JSON string with state edits to merge')
+  .option('--state-file <path>', 'Path to JSON file with state edits')
+  .option('--checkpoint <id>', 'Specific checkpoint ID to resume from (defaults to latest)')
+  .action(async (threadId, opts) => {
+    const { InMemoryStore } = await import('./core/memory/memory-store.js');
+    const { SqliteCheckpointer } = await import('./core/checkpointer/sqlite.js');
+    const { createWorkflow } = await import('./core/types.js');
+    
+    const checkpointer = new SqliteCheckpointer('./.harness/checkpoints.db');
+    const checkpoints = await checkpointer.list(threadId);
+    
+    if (checkpoints.length === 0) {
+      console.error(`No checkpoints found for thread: ${threadId}`);
+      checkpointer.close();
+      process.exit(1);
+    }
+    
+    // Get the checkpoint to resume from
+    let checkpoint = checkpoints.find(c => c.checkpointId === opts.checkpoint);
+    if (!checkpoint) {
+      if (opts.checkpoint) {
+        console.error(`Checkpoint not found: ${opts.checkpoint}`);
+        checkpointer.close();
+        process.exit(1);
+      }
+      // Use the latest checkpoint
+      checkpoint = checkpoints[checkpoints.length - 1];
+    }
+    
+    // checkpoint is guaranteed to be defined here
+    const cp = checkpoint!;
+    
+    let editedState: unknown | undefined;
+    
+    if (opts.editState) {
+      // Open editor with current state
+      const tmpFile = path.join('/tmp', `harness-state-${threadId}.json`);
+      fs.writeFileSync(tmpFile, JSON.stringify(cp.state, null, 2));
+      const { spawnSync } = await import('node:child_process');
+      const editor = process.env['EDITOR'] ?? 'vi';
+      const result = spawnSync(editor, [tmpFile], { stdio: 'inherit' });
+      if (result.error || result.status !== 0) {
+        console.error('Editor exited with error');
+        checkpointer.close();
+        process.exit(1);
+      }
+      editedState = JSON.parse(fs.readFileSync(tmpFile, 'utf8'));
+      fs.unlinkSync(tmpFile);
+    } else if (opts.stateJson) {
+      editedState = JSON.parse(opts.stateJson);
+    } else if (opts.stateFile) {
+      editedState = JSON.parse(fs.readFileSync(opts.stateFile, 'utf8'));
+    }
+    
+    // For resume, we need a graph - but we need the workflow definition
+    // This is a simplified version - in practice you'd load the workflow from storage
+    console.log(`Resuming thread ${threadId} from checkpoint ${cp.checkpointId}`);
+    console.log('State:', JSON.stringify(cp.state, null, 2));
+    if (editedState) {
+      console.log('Edited state:', JSON.stringify(editedState, null, 2));
+    }
+    
+    // The actual resume would be done via the CompiledGraph
+    // This requires the workflow to be loaded and compiled with checkpointer
+    console.log('Use the SDK for full resume: CompiledGraph.resume({ threadId, checkpointId, editedState })');
+    
+    checkpointer.close();
+  });
+
+// ── checkpoints ──────────────────────────────────────────────────────────────
+
+program
+  .command('checkpoints <threadId>')
+  .description('List checkpoints for a thread')
+  .action(async (threadId) => {
+    const { SqliteCheckpointer } = await import('./core/checkpointer/sqlite.js');
+    const checkpointer = new SqliteCheckpointer('./.harness/checkpoints.db');
+    const checkpoints = await checkpointer.list(threadId);
+    
+    if (checkpoints.length === 0) {
+      console.log(`No checkpoints found for thread: ${threadId}`);
+      checkpointer.close();
+      return;
+    }
+    
+    console.log(`Checkpoints for thread ${threadId}:`);
+    for (const cp of checkpoints) {
+      console.log(`  ${cp.checkpointId} | step: ${cp.metadata.step} | node: ${cp.metadata.node || 'N/A'} | ${cp.createdAt.toISOString()}`);
+    }
+    
+    checkpointer.close();
+  });
+
 program.parse();
