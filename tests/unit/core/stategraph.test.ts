@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { StateGraph } from '../../../src/core/stategraph/index.ts';
-import { InMemoryCheckpointer } from '../../../src/core/checkpointer/in-memory.ts';
+import { StateGraph } from '../../../src/core/stategraph/index.js';
+import { InMemoryCheckpointer } from '../../../src/core/checkpointer/in-memory.js';
 
 interface TestState {
   value: number;
