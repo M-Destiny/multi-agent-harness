@@ -30,6 +30,11 @@ export { StateGraph } from './core/stategraph/index.js';
 export { CompiledGraph } from './core/stategraph/index.js';
 export type { CompileOptions, StateSnapshot, GraphInterrupt, ResumeOptions, GraphResult } from './core/types.js';
 
+// MCP (Model Context Protocol)
+export { MCPClient } from './core/mcp/client.js';
+export { StdioTransport } from './core/mcp/stdio-transport.js';
+export type { MCPServerConfig, MCPTool, MCPTransport, MCPClientConfig, MCPConnection } from './core/mcp/types.js';
+
 // LLM Providers
 export { OpenAIProvider } from './core/llm/openai.js';
 export { AnthropicProvider } from './core/llm/anthropic.js';
