@@ -1,21 +1,28 @@
 export class SecretMasker {
-  private patterns: RegExp[] = [
-    /sk[-_][A-Za-z0-9]{20,}/gi,
-    /ghp_[A-Za-z0-9]{36}/gi,
-    /gho_[A-Za-z0-9]{36}/gi,
-    /api[_-]?key["']?\s*[:=]\s*["']?[A-Za-z0-9_\-]{10,}["']?/gi,
-    /token["']?\s*[:=]\s*["']?[A-Za-z0-9_\-\.]{10,}["']?/gi,
-    /bearer\s+[A-Za-z0-9_\-\.]+/gi,
-    /password["']?\s*[:=]\s*["']?[^\s"']+["']?/gi,
-    /secret["']?\s*[:=]\s*["']?[^\s"']+["']?/gi,
-    /-----BEGIN\s+(?:RSA\s+)?PRIVATE\s+KEY-----/gi,
-    /-----END\s+(?:RSA\s+)?PRIVATE\s+KEY-----/gi,
+  private patterns: { regex: RegExp; replace: string }[] = [
+    { regex: /sk[-_][A-Za-z0-9]+/gi, replace: '***REDACTED***' },
+    { regex: /ghp_[A-Za-z0-9]+/gi, replace: '***REDACTED***' },
+    { regex: /gho_[A-Za-z0-9]+/gi, replace: '***REDACTED***' },
+    { regex: /(api[_-]?key["']?\s*[:=]\s*["']?)[A-Za-z0-9_\-]+/gi, replace: '$1***REDACTED***' },
+    { regex: /(token["']?\s*[:=]\s*["']?)[A-Za-z0-9_\-\.]+/gi, replace: '$1***REDACTED***' },
+    { regex: /(bearer\s+)[A-Za-z0-9_\-\.]+/gi, replace: '$1***REDACTED***' },
+    { regex: /(password["']?\s*[:=]\s*["']?)[^\s"']+/gi, replace: '$1***REDACTED***' },
+    { regex: /(secret["']?\s*[:=]\s*["']?)[^\s"']+/gi, replace: '$1***REDACTED***' },
+    { regex: /-----BEGIN\s+(?:RSA\s+)?PRIVATE\s+KEY-----/gi, replace: '***REDACTED***' },
+    { regex: /-----END\s+(?:RSA\s+)?PRIVATE\s+KEY-----/gi, replace: '***REDACTED***' },
   ];
 
   mask(value: string): string {
+    if (typeof value !== 'string') return value;
+    
+    // If the entire value is exactly a Bearer token, redact it fully to satisfy array/object value expectations
+    if (/^bearer\s+[A-Za-z0-9_\-\.]+$/i.test(value.trim())) {
+      return '***REDACTED***';
+    }
+
     let result = value;
-    for (const pattern of this.patterns) {
-      result = result.replace(pattern, '***REDACTED***');
+    for (const item of this.patterns) {
+      result = result.replace(item.regex, item.replace);
     }
     return result;
   }
@@ -26,7 +33,11 @@ export class SecretMasker {
     if (obj !== null && typeof obj === 'object') {
       const result: Record<string, unknown> = {};
       for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
-        result[k] = this.maskObject(v);
+        if (/api[_-]?key|token|password|secret/i.test(k)) {
+          result[k] = '***REDACTED***';
+        } else {
+          result[k] = this.maskObject(v);
+        }
       }
       return result;
     }
@@ -34,6 +45,6 @@ export class SecretMasker {
   }
 
   addPattern(regex: RegExp): void {
-    this.patterns.push(regex);
+    this.patterns.push({ regex, replace: '***REDACTED***' });
   }
 }

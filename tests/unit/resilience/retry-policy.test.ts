@@ -27,7 +27,7 @@ describe('RetryPolicy', () => {
       attempts++;
       throw new Error('permanent');
     })).rejects.toThrow('permanent');
-    expect(attempts).toBe(1); // first attempt + 1 retry = 2 total
+    expect(attempts).toBe(2); // first attempt + 1 retry = 2 total
   });
 
   it('onRetry callback fires', async () => {
@@ -39,8 +39,7 @@ describe('RetryPolicy', () => {
     let attempts = 0;
     await expect(policy.execute(async () => {
       attempts++;
-      if (attempts < 3) throw new Error('transient');
-      return 'done';
+      throw new Error('transient');
     })).rejects.toThrow('transient');
     expect(retries.length).toBe(2); // 2 retries before final failure
   });
