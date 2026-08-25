@@ -4,6 +4,8 @@ import type { MemoryStore } from './memory/store.js';
 import type { SubAgent } from './sub-agent.js';
 import { TaskQueue } from './task.js';
 import { parallelMap } from '../utils/parallel.js';
+import { createA2AClient } from './a2a/client.js';
+import type { A2AMessage } from './a2a/types.js';
 
 export class MasterAgent extends BaseAgent {
   private readonly _subAgents: SubAgent[] = [];
@@ -96,6 +98,55 @@ export class MasterAgent extends BaseAgent {
   async delegate(task: Task, toAgent: SubAgent, context?: TaskContext): Promise<TaskResult> {
     this.emit({ type: 'delegation', fromAgentId: this.id, toAgentId: toAgent.id, taskId: task.id, context, timestamp: new Date() });
     return toAgent.execute(task, context);
+  }
+
+  async delegateToA2A(agentUrl: string, task: Task, context?: TaskContext, auth?: { scheme: 'bearer' | 'apiKey'; token?: string }): Promise<TaskResult> {
+    const client = createA2AClient({ baseUrl: agentUrl, auth });
+    
+    // 1. Discover capabilities
+    const card = await client.discover();
+    this.emit({ type: 'delegation', fromAgentId: this.id, toAgentId: card.name, taskId: task.id, context, timestamp: new Date() });
+    
+    // 2. Map Task to A2AMessage
+    const message: A2AMessage = {
+      role: 'user',
+      parts: [{ type: 'text', text: task.input }]
+    };
+    
+    // 3. Send Task
+    const a2aTask = await client.sendTask(message, { streaming: card.capabilities.streaming });
+    
+    let finalTask = a2aTask;
+    if (card.capabilities.streaming) {
+      for await (const update of client.subscribeTask(a2aTask.id)) {
+        if (update.status === 'completed' || update.status === 'failed' || update.status === 'canceled') {
+          // fetch final state
+          finalTask = await client.getTask(a2aTask.id);
+          break;
+        }
+      }
+    } else {
+      // Poll until finished
+      let status = a2aTask.status;
+      while (status === 'submitted' || status === 'working' || status === 'input-required') {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        finalTask = await client.getTask(a2aTask.id);
+        status = finalTask.status;
+      }
+    }
+    
+    if (finalTask.status === 'failed') {
+      throw new Error(`A2A delegation failed: ${finalTask.message?.parts?.[0]?.text || 'Unknown error'}`);
+    }
+    
+    return {
+      output: finalTask.message?.parts?.[0]?.text || '',
+      artifacts: finalTask.artifacts?.map(art => ({
+        name: art.name,
+        type: art.parts?.[0]?.type || 'file',
+        content: art.parts?.[0]?.text || JSON.stringify(art.parts?.[0]?.data) || '',
+      })) || [],
+    };
   }
 
   broadcast(message: AgentMessage, targets?: SubAgent[]): void {
