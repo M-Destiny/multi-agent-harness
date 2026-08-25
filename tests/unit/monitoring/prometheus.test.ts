@@ -27,8 +27,8 @@ describe('PrometheusMetrics', () => {
     metrics.histogram('request_duration_ms', 120, { method: 'GET' });
     const output = metrics.serialize();
     expect(output).toContain('request_duration_ms_sum');
-    expect(output).toContain('request_duration_ms_count 2');
-    expect(output).toContain('_bucket{le=');
+    expect(output).toContain('request_duration_ms_count{method="GET"} 2');
+    expect(output).toContain('_bucket{method="GET",le=');
   });
 
   it('serialize produces valid Prometheus text format', () => {

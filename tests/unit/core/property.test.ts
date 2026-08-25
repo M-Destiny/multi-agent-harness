@@ -78,6 +78,7 @@ describe('TaskQueue properties', () => {
     let task;
     while ((task = q.dequeue()) !== null) {
       order.push(task.id);
+      q.markRunning(task.id);
     }
     expect(order).toEqual(['t0', 't1', 't2', 't3', 't4', 't5', 't6', 't7', 't8', 't9']);
   });

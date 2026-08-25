@@ -56,28 +56,47 @@ export class PrometheusMetrics {
 
   serialize(): string {
     const lines: string[] = [];
+    const parseKey = (key: string) => {
+      const match = key.match(/^([^{]+)(?:{(.+)}$)?/);
+      return {
+        name: match ? match[1] : key,
+        labelStr: match && match[2] ? match[2] : '',
+      };
+    };
+
     for (const [key, m] of this.counters) {
-      lines.push(`# TYPE ${m.type} counter`);
-      lines.push(`# HELP ${m.type} counter`);
-      lines.push(`${key} ${m.value}`);
+      const { name, labelStr } = parseKey(key);
+      lines.push(`# TYPE ${name} counter`);
+      lines.push(`# HELP ${name} counter`);
+      const suffix = labelStr ? `{${labelStr}}` : '';
+      lines.push(`${name}${suffix} ${m.value}`);
     }
     for (const [key, m] of this.gauges) {
-      lines.push(`# TYPE ${m.type} gauge`);
-      lines.push(`# HELP ${m.type} gauge`);
-      lines.push(`${key} ${m.value}`);
+      const { name, labelStr } = parseKey(key);
+      lines.push(`# TYPE ${name} gauge`);
+      lines.push(`# HELP ${name} gauge`);
+      const suffix = labelStr ? `{${labelStr}}` : '';
+      lines.push(`${name}${suffix} ${m.value}`);
     }
     for (const [key, m] of this.histograms) {
-      lines.push(`# TYPE ${m.type} histogram`);
-      lines.push(`# HELP ${m.type} histogram`);
-      for (const b of m.buckets) lines.push(`${key}_bucket{le="${b.le}"} ${b.count}`);
-      lines.push(`${key}_sum ${m.sum}`);
-      lines.push(`${key}_count ${m.count}`);
+      const { name, labelStr } = parseKey(key);
+      lines.push(`# TYPE ${name} histogram`);
+      lines.push(`# HELP ${name} histogram`);
+      for (const b of m.buckets) {
+        const bucketSuffix = labelStr ? `{${labelStr},le="${b.le}"}` : `{le="${b.le}"}`;
+        lines.push(`${name}_bucket${bucketSuffix} ${b.count}`);
+      }
+      const sumSuffix = labelStr ? `{${labelStr}}` : '';
+      lines.push(`${name}_sum${sumSuffix} ${m.sum}`);
+      lines.push(`${name}_count${sumSuffix} ${m.count}`);
     }
     for (const [key, m] of this.summaries) {
-      lines.push(`# TYPE ${m.type} summary`);
-      lines.push(`# HELP ${m.type} summary`);
-      lines.push(`${key}_sum ${m.sum}`);
-      lines.push(`${key}_count ${m.count}`);
+      const { name, labelStr } = parseKey(key);
+      lines.push(`# TYPE ${name} summary`);
+      lines.push(`# HELP ${name} summary`);
+      const sumSuffix = labelStr ? `{${labelStr}}` : '';
+      lines.push(`${name}_sum${sumSuffix} ${m.sum}`);
+      lines.push(`${name}_count${sumSuffix} ${m.count}`);
     }
     return lines.join('\n');
   }
