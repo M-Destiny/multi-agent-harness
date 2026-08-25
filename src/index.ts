@@ -35,6 +35,11 @@ export { MCPClient } from './core/mcp/client.js';
 export { StdioTransport } from './core/mcp/stdio-transport.js';
 export type { MCPServerConfig, MCPTool, MCPTransport, MCPClientConfig, MCPConnection } from './core/mcp/types.js';
 
+// A2A (Agent-to-Agent)
+export { createA2AClient } from './core/a2a/client.js';
+export { A2AClientImpl as A2AClient } from './core/a2a/client.js';
+export type { A2AAgentCard, A2ASkill, A2AAuthScheme, A2ATask, A2ATaskStatus, A2AMessage, A2AMessagePart, A2AArtifact, A2AClientConfig, A2AAuthConfig, A2ATaskStatusUpdate } from './core/a2a/types.js';
+
 // LLM Providers
 export { OpenAIProvider } from './core/llm/openai.js';
 export { AnthropicProvider } from './core/llm/anthropic.js';
