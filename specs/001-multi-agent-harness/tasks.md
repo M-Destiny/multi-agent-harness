@@ -40,7 +40,7 @@ This file tracks the outstanding issues and tasks for the `multi-agent-harness` 
   - Add token-based cost tracking at agent/thread/workflow levels
   - Implement Prometheus metrics and webhook alerts for threshold limits
 
-- [ ] **Issue #15: [SDK] Python SDK with Feature Parity (pip package)**
+- [x] **Issue #15: [SDK] Python SDK with Feature Parity (pip package)**
   - Build `multi-agent-harness-py` client SDK using OpenAPI generated models
   - Maintain API alignment with TypeScript SDK facades
 
