@@ -1,4 +1,4 @@
-import type { CompletionOptions, HealthStatus, LLMChunk, LLMConfig, LLMMessage, LLMProvider, LLMResponse, UsageStats } from '../types.js';
+import type { CompletionOptions, HealthStatus, LLMChunk, LLMConfig, LLMMessage, LLMProvider, LLMResponse, UsageStats, StructuredOutputConfig } from '../types.js';
 import { LLMError } from './provider.js';
 import { tracing } from '../monitoring/tracing.js';
 
@@ -162,5 +162,10 @@ export class OpenAIProvider implements LLMProvider {
     entry.requests += 1;
     entry.tokens += tokens;
     this.usage.byModel[this.config.model] = entry;
+  }
+
+  async completeStructured<T>(messages: LLMMessage[], config: StructuredOutputConfig<T>): Promise<T> {
+    const { executeStructured } = await import('./structured.js');
+    return executeStructured(this, messages, config);
   }
 }

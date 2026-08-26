@@ -72,12 +72,21 @@ export interface JSONSchema {
   description?: string;
 }
 
+export interface StructuredOutputConfig<T> {
+  schema: unknown; // ZodSchema<T> or JSONSchema
+  maxRetries?: number;
+  onValidationError?: (error: Error, attempt: number) => Promise<void>;
+  _type?: T;
+}
+
 export interface LLMProvider {
   readonly name: string;
   readonly models: ReadonlyArray<string>;
   readonly config: LLMConfig;
   complete(messages: LLMMessage[], options?: CompletionOptions): Promise<LLMResponse>;
   stream(messages: LLMMessage[], options?: CompletionOptions): AsyncIterable<LLMChunk>;
+  completeStructured?<T>(messages: LLMMessage[], config: StructuredOutputConfig<T>): Promise<T>;
+  streamStructured?<T>(messages: LLMMessage[], config: StructuredOutputConfig<T>): AsyncIterable<T>;
   healthCheck(): Promise<HealthStatus>;
   getUsage(): Promise<UsageStats>;
 }
