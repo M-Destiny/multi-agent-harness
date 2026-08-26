@@ -32,7 +32,7 @@ This file tracks the outstanding issues and tasks for the `multi-agent-harness` 
   - Implement Fastify REST endpoint controller for workflow and agent CRUD
   - Add Server-Sent Events (SSE) and WebSocket streams for real-time monitoring
 
-- [ ] **Issue #13: [LLM] Structured Output with Schema Validation & Auto-Retry (Zod/JSON Schema)**
+- [x] **Issue #13: [LLM] Structured Output with Schema Validation & Auto-Retry (Zod/JSON Schema)**
   - Implement Zod/JSON Schema to function calling mapping
   - Add validation retry loop with feedback to the provider on schema failure
 
