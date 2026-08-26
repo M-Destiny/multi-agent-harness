@@ -1,9 +1,5 @@
 node_modules/
 dist/
 .harness/
-coverage/
-*.log
-.env
-.DS_Store
-dist-old/
-*.tsbuildinfo
+__pycache__/
+*.pyc
