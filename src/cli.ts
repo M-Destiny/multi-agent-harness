@@ -227,6 +227,21 @@ program
     console.log(`JSON report: ${jsonReportPath}\n`);
   });
 
+// ── cost ─────────────────────────────────────────────────────────────────────
+
+program
+  .command('cost <threadId>')
+  .description('Show cost and token usage breakdown for a thread')
+  .action(async (threadId) => {
+    const { CostTracker } = await import('./core/monitoring/cost.js');
+    const tracker = CostTracker.getInstance();
+    const breakdown = tracker.getUsageBreakdown(threadId);
+    console.log(`\n=== Usage Breakdown for Thread: ${threadId} ===`);
+    console.log(`Prompt Tokens:     ${breakdown.promptTokens}`);
+    console.log(`Completion Tokens: ${breakdown.completionTokens}`);
+    console.log(`Total Cost:        $${breakdown.costUsd.toFixed(6)}\n`);
+  });
+
 // ── speckit ─────────────────────────────────────────────────────────────────
 
 const speckit = program

@@ -8,3 +8,5 @@ export { PrometheusMetrics } from './prometheus.js';
 export { HealthServer } from './health-api.js';
 export { TracingService, tracing } from './tracing.js';
 export type { Span } from './tracing.js';
+export * from './cost.js';
+
