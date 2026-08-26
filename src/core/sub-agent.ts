@@ -4,6 +4,9 @@ import type { MemoryStore } from './memory/store.js';
 import { OpenAIProvider } from './llm/openai.js';
 import { AnthropicProvider } from './llm/anthropic.js';
 import { OpenRouterProvider } from './llm/openrouter.js';
+import { SandboxRegistry } from './security/index.js';
+import type { SandboxSession } from './security/index.js';
+import { builtInTools } from './tools/index.js';
 
 function createLLMProvider(config: AgentConfig['llmConfig']): LLMProvider {
   switch (config.provider) {
@@ -17,6 +20,7 @@ function createLLMProvider(config: AgentConfig['llmConfig']): LLMProvider {
 export class SubAgent extends BaseAgent {
   private provider: LLMProvider;
   private readonly toolHandlers = new Map<string, (args: unknown) => Promise<ToolResult>>();
+  private sandboxSession: SandboxSession | null = null;
 
   constructor(
     config: AgentConfig,
@@ -31,10 +35,29 @@ export class SubAgent extends BaseAgent {
   override async initialize(): Promise<void> {
     if (this.initialized) return;
     this.emit({ type: 'agent_spawn', agentId: this.id, timestamp: new Date() });
+
+    if (this._config.sandbox?.enabled) {
+      const provider = SandboxRegistry.get(this._config.sandbox.provider);
+      if (provider) {
+        this.sandboxSession = await provider.createSession(this._config.sandbox);
+        for (const tool of builtInTools(this.sandboxSession)) {
+          this.registerTool(tool.name, tool.handler);
+        }
+      }
+    } else {
+      for (const tool of builtInTools(null)) {
+        this.registerTool(tool.name, tool.handler);
+      }
+    }
+
     this.initialized = true;
   }
 
   override async shutdown(): Promise<void> {
+    if (this.sandboxSession) {
+      await this.sandboxSession.close();
+      this.sandboxSession = null;
+    }
     this.initialized = false;
   }
 

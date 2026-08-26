@@ -3,6 +3,7 @@ import type { Tool } from './registry.js';
 import * as fs from 'node:fs';
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
+import type { SandboxSession } from '../security/index.js';
 
 const execAsync = promisify(exec);
 
@@ -10,7 +11,7 @@ function makeTool(name: string, description: string, schema: object, handler: (a
   return { name, description, inputSchema: schema as import('../types.js').JSONSchema, handler };
 }
 
-export function builtInTools(): Tool[] {
+export function builtInTools(sandboxSession?: SandboxSession | null): Tool[] {
   return [
     makeTool(
       'file_read',
@@ -19,6 +20,10 @@ export function builtInTools(): Tool[] {
       async (args) => {
         const { path } = args as { path: string };
         try {
+          if (sandboxSession) {
+            const content = await sandboxSession.readFile(path);
+            return { success: true, output: content };
+          }
           const content = fs.readFileSync(path, 'utf8');
           return { success: true, output: content };
         } catch (e) {
@@ -33,6 +38,10 @@ export function builtInTools(): Tool[] {
       async (args) => {
         const { path, content } = args as { path: string; content: string };
         try {
+          if (sandboxSession) {
+            await sandboxSession.writeFile(path, content);
+            return { success: true, output: `Written ${content.length} chars to ${path} in sandbox` };
+          }
           fs.writeFileSync(path, content, 'utf8');
           return { success: true, output: `Written ${content.length} chars to ${path}` };
         } catch (e) {
@@ -47,6 +56,9 @@ export function builtInTools(): Tool[] {
       async (args) => {
         const { command, cwd } = args as { command: string; cwd?: string };
         try {
+          if (sandboxSession) {
+            return await sandboxSession.executeCommand(command, cwd);
+          }
           const { stdout, stderr } = await execAsync(command, { cwd: cwd ?? process.cwd(), timeout: 60000 });
           return { success: true, output: stdout + stderr };
         } catch (e) {
@@ -61,6 +73,10 @@ export function builtInTools(): Tool[] {
       { type: 'object', properties: { path: { type: 'string' } }, required: ['path'] },
       async (args) => {
         const { path } = args as { path: string };
+        if (sandboxSession) {
+          const res = await sandboxSession.executeCommand(`test -e "${path}"`);
+          return { success: true, output: res.success ? 'true' : 'false' };
+        }
         try { fs.accessSync(path); return { success: true, output: 'true' }; }
         catch { return { success: true, output: 'false' }; }
       },
@@ -72,6 +88,14 @@ export function builtInTools(): Tool[] {
       async (args) => {
         const { path } = args as { path: string };
         try {
+          if (sandboxSession) {
+            const res = await sandboxSession.executeCommand(`ls -1 "${path}"`);
+            if (!res.success) {
+              return { success: false, error: res.error ?? 'Failed to list directory in sandbox' };
+            }
+            const files = res.output.split('\n').map(f => f.trim()).filter(Boolean);
+            return { success: true, output: JSON.stringify(files) };
+          }
           const files = fs.readdirSync(path);
           return { success: true, output: JSON.stringify(files) };
         } catch (e) {

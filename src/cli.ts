@@ -90,6 +90,7 @@ program
         systemPrompt: 'You are a worker agent.',
         maxRetries: 3,
         timeoutMs: 120_000,
+        sandbox: config.sandbox,
       };
       const sub = new SubAgent(subCfg, memory);
       master.addSubAgent(sub);

@@ -204,6 +204,15 @@ export interface AgentConfig {
   systemPrompt: string;
   maxRetries: number;
   timeoutMs: number;
+  sandbox?: {
+    enabled: boolean;
+    provider: 'docker' | 'e2b' | 'modal';
+    cpuLimit?: number;
+    memoryLimitMb?: number;
+    timeoutMs?: number;
+    networkAllowed?: boolean;
+    image?: string;
+  };
 }
 
 export interface ToolResult {

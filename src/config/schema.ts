@@ -13,6 +13,19 @@ export const LLMConfigSchema = z.object({
 });
 export type LLMConfig = z.infer<typeof LLMConfigSchema>;
 
+// ── Sandbox Config ──────────────────────────────────────────────────────────
+
+export const SandboxConfigSchema = z.object({
+  enabled: z.boolean().default(false),
+  provider: z.enum(['docker', 'e2b', 'modal']).default('docker'),
+  cpuLimit: z.number().min(0).optional(),
+  memoryLimitMb: z.number().int().positive().optional(),
+  timeoutMs: z.number().int().positive().default(60_000),
+  networkAllowed: z.boolean().default(false),
+  image: z.string().optional(),
+});
+export type SandboxConfig = z.infer<typeof SandboxConfigSchema>;
+
 // ── Agent Config ────────────────────────────────────────────────────────────
 
 export const AgentConfigSchema = z.object({
@@ -26,6 +39,7 @@ export const AgentConfigSchema = z.object({
   systemPrompt: z.string().default(''),
   maxRetries: z.number().int().min(0).default(3),
   timeoutMs: z.number().int().positive().default(120_000),
+  sandbox: SandboxConfigSchema.optional(),
 });
 export type AgentConfig = z.infer<typeof AgentConfigSchema>;
 
@@ -96,6 +110,8 @@ export const ObservabilityConfigSchema = z.object({
 });
 export type ObservabilityConfig = z.infer<typeof ObservabilityConfigSchema>;
 
+
+
 // ── Root Harness Config ─────────────────────────────────────────────────────
 
 export const HarnessConfigSchema = z.object({
@@ -109,6 +125,7 @@ export const HarnessConfigSchema = z.object({
   memory: MemoryConfigSchema.default({}),
   logging: LoggingConfigSchema.default({}),
   observability: ObservabilityConfigSchema.default({}),
+  sandbox: SandboxConfigSchema.default({}),
   agents: z.object({
     maxConcurrent: z.number().int().min(1).default(5),
     defaultTimeoutMs: z.number().int().positive().default(120_000),
