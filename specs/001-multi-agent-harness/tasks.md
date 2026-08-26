@@ -44,6 +44,6 @@ This file tracks the outstanding issues and tasks for the `multi-agent-harness` 
   - Build `multi-agent-harness-py` client SDK using OpenAPI generated models
   - Maintain API alignment with TypeScript SDK facades
 
-- [ ] **Issue #16: [Memory] Vector Memory with Semantic Search, Embeddings, Consolidation (pgvector, Pinecone, etc.)**
+- [x] **Issue #16: [Memory] Vector Memory with Semantic Search, Embeddings, Consolidation (pgvector, Pinecone, etc.)**
   - Define `VectorMemoryStore` interface extending existing `MemoryStore`
   - Implement local vector indexing (HNSW) and remote store adapters (SQLite-vec, pgvector, Pinecone)
