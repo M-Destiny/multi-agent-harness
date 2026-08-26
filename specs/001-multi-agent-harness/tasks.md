@@ -12,7 +12,7 @@ This file tracks the outstanding issues and tasks for the `multi-agent-harness` 
   - Integrate OpenTelemetry SDK
   - Map LLM requests, token counts, latency, and agent traces to GenAI Semantic Conventions
 
-- [ ] **Issue #8: [Security] Sandboxed Code Execution (E2B, Modal, gVisor, Firecracker)**
+- [x] **Issue #8: [Security] Sandboxed Code Execution (E2B, Modal, gVisor, Firecracker)**
   - Implement secure microVM/container provider interfaces
   - Support Docker (local) and E2B (cloud) sandbox executors for terminal and file actions
 
