@@ -1,4 +1,4 @@
-import type { Checkpointer, Checkpoint, CheckpointMetadata, CompileOptions, Edge, ConditionalEdge, NodeFn, StateSnapshot, GraphInterrupt, ResumeOptions, GraphResult } from '../types.js';
+import type { Checkpointer, Checkpoint, CompileOptions, Edge, ConditionalEdge, NodeFn, StateSnapshot, GraphInterrupt, ResumeOptions, GraphResult } from '../types.js';
 
 interface NodeConfig<S> {
   fn: NodeFn<S>;

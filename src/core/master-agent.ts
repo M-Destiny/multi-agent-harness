@@ -110,7 +110,7 @@ export class MasterAgent extends BaseAgent {
     // 2. Map Task to A2AMessage
     const message: A2AMessage = {
       role: 'user',
-      parts: [{ type: 'text', text: task.input }]
+      parts: [{ type: 'text', text: task.description }]
     };
     
     // 3. Send Task

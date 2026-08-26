@@ -1,4 +1,3 @@
-import type { JSONSchema } from '../types.js';
 
 export interface A2AAgentCard {
   name: string;

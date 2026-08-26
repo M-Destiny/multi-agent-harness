@@ -51,6 +51,8 @@ program
   .option('-c, --config <path>', 'Path to harness config')
   .action(async (file, opts) => {
     const config: HarnessConfig = loadConfig(opts.config);
+    const { tracing } = await import('./core/monitoring/tracing.js');
+    tracing.initialize(config.observability.otel);
     const logger = createLogger(config);
     const wfRaw = JSON.parse(fs.readFileSync(path.resolve(file), 'utf8'));
     logger.info({ workflow: wfRaw.name }, 'Loading workflow');
@@ -207,9 +209,7 @@ program
   .option('--state-file <path>', 'Path to JSON file with state edits')
   .option('--checkpoint <id>', 'Specific checkpoint ID to resume from (defaults to latest)')
   .action(async (threadId, opts) => {
-    const { InMemoryStore } = await import('./core/memory/memory-store.js');
     const { SqliteCheckpointer } = await import('./core/checkpointer/sqlite.js');
-    const { createWorkflow } = await import('./core/types.js');
     
     const checkpointer = new SqliteCheckpointer('./.harness/checkpoints.db');
     const checkpoints = await checkpointer.list(threadId);

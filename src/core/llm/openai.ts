@@ -1,5 +1,6 @@
 import type { CompletionOptions, HealthStatus, LLMChunk, LLMConfig, LLMMessage, LLMProvider, LLMResponse, UsageStats } from '../types.js';
 import { LLMError } from './provider.js';
+import { tracing } from '../monitoring/tracing.js';
 
 interface OpenAIChoice {
   message: { content?: string; tool_calls?: LLMResponse['toolCalls'] };
@@ -36,31 +37,51 @@ export class OpenAIProvider implements LLMProvider {
   }
 
   async complete(messages: LLMMessage[], options?: CompletionOptions): Promise<LLMResponse> {
-    const body: Record<string, unknown> = {
-      model: this.config.model,
-      messages: this.buildMessages(messages, options),
-      temperature: options?.temperature ?? this.config.temperature,
-      max_tokens: options?.maxTokens ?? this.config.maxTokens,
+    const model = this.config.model;
+    const temp = options?.temperature ?? this.config.temperature;
+    const maxTokens = options?.maxTokens ?? this.config.maxTokens;
+    const attributes = {
+      'gen_ai.operation.name': 'completion',
+      'gen_ai.request.model': model,
+      'gen_ai.request.temperature': temp,
+      'gen_ai.request.max_tokens': maxTokens,
     };
-    if (options?.tools && options.tools.length > 0) {
-      body['tools'] = options.tools.map((t) => ({ type: 'function', function: { name: t.name, description: t.description, parameters: t.parameters } }));
-      body['tool_choice'] = options.toolChoice ?? 'auto';
-    }
-    const res = await this.fetchWithTimeout(`${this.baseUrl}/chat/completions`, body);
-    if (!res.ok) {
-      const text = await res.text();
-      throw new LLMError(`OpenAI error: ${text}`, 'openai', this.config.model, res.status);
-    }
-    const data = (await res.json()) as OpenAIResponse;
-    const choice = data.choices[0]!;
-    const usage = data.usage;
-    this.trackUsage(usage.total_tokens);
-    return {
-      content: choice.message.content ?? '',
-      toolCalls: choice.message.tool_calls ?? undefined,
-      usage: { promptTokens: usage.prompt_tokens, completionTokens: usage.completion_tokens, totalTokens: usage.total_tokens },
-      model: this.config.model,
-    };
+
+    return tracing.withSpan('openai.complete', async (spanId) => {
+      const body: Record<string, unknown> = {
+        model,
+        messages: this.buildMessages(messages, options),
+        temperature: temp,
+        max_tokens: maxTokens,
+      };
+      if (options?.tools && options.tools.length > 0) {
+        body['tools'] = options.tools.map((t) => ({ type: 'function', function: { name: t.name, description: t.description, parameters: t.parameters } }));
+        body['tool_choice'] = options.toolChoice ?? 'auto';
+      }
+      const res = await this.fetchWithTimeout(`${this.baseUrl}/chat/completions`, body);
+      if (!res.ok) {
+        const text = await res.text();
+        throw new LLMError(`OpenAI error: ${text}`, 'openai', model, res.status);
+      }
+      const data = (await res.json()) as OpenAIResponse;
+      const choice = data.choices[0]!;
+      const usage = data.usage;
+      this.trackUsage(usage.total_tokens);
+
+      const span = tracing.getSpan(spanId);
+      if (span) {
+        span.attributes['gen_ai.response.model'] = model;
+        span.attributes['gen_ai.usage.prompt_tokens'] = usage.prompt_tokens;
+        span.attributes['gen_ai.usage.completion_tokens'] = usage.completion_tokens;
+      }
+
+      return {
+        content: choice.message.content ?? '',
+        toolCalls: choice.message.tool_calls ?? undefined,
+        usage: { promptTokens: usage.prompt_tokens, completionTokens: usage.completion_tokens, totalTokens: usage.total_tokens },
+        model,
+      };
+    }, attributes);
   }
 
   async *stream(messages: LLMMessage[], options?: CompletionOptions): AsyncIterable<LLMChunk> {

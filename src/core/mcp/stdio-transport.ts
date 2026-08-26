@@ -128,7 +128,7 @@ export class StdioTransport extends EventEmitter implements MCPTransport {
         } else if (message.method) {
           this.emit('notification', message);
         }
-      } catch (e) {
+      } catch {
         // Ignore parse errors for partial messages
       }
     }

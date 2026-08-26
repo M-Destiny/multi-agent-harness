@@ -1,6 +1,6 @@
 import { ToolRegistry } from '../tools/index.js';
 import type { Tool } from '../tools/index.js';
-import type { MCPServerConfig, MCPTool, MCPTransport } from './types.js';
+import type { MCPTool, MCPTransport } from './types.js';
 import { StdioTransport } from './stdio-transport.js';
 
 export class MCPClient {

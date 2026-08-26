@@ -1,5 +1,6 @@
 import type { CompletionOptions, HealthStatus, LLMChunk, LLMConfig, LLMMessage, LLMProvider, LLMResponse, UsageStats } from '../types.js';
 import { LLMError } from './provider.js';
+import { tracing } from '../monitoring/tracing.js';
 
 interface AnthropicContent {
   type: string;
@@ -26,28 +27,48 @@ export class AnthropicProvider implements LLMProvider {
   }
 
   async complete(messages: LLMMessage[], options?: CompletionOptions): Promise<LLMResponse> {
-    const systemPrompt = options?.systemPrompt ?? messages.find((m) => m.role === 'system')?.content ?? '';
-    const apiMessages = messages.filter((m) => m.role !== 'system');
-    const body: Record<string, unknown> = {
-      model: this.config.model,
-      messages: apiMessages.map((m) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content })),
-      max_tokens: options?.maxTokens ?? this.config.maxTokens,
-      temperature: options?.temperature ?? this.config.temperature,
+    const model = this.config.model;
+    const temp = options?.temperature ?? this.config.temperature;
+    const maxTokens = options?.maxTokens ?? this.config.maxTokens;
+    const attributes = {
+      'gen_ai.operation.name': 'completion',
+      'gen_ai.request.model': model,
+      'gen_ai.request.temperature': temp,
+      'gen_ai.request.max_tokens': maxTokens,
     };
-    if (systemPrompt) body['system'] = systemPrompt;
-    const res = await this.fetchWithTimeout(`${this.baseUrl}/v1/messages`, body);
-    if (!res.ok) {
-      const text = await res.text();
-      throw new LLMError(`Anthropic error: ${text}`, 'anthropic', this.config.model, res.status);
-    }
-    const data = (await res.json()) as AnthropicResponse;
-    const usage = data.usage;
-    this.trackUsage(usage.input_tokens + usage.output_tokens);
-    return {
-      content: data.content.filter((c) => c.type === 'text').map((c) => c.text).join(''),
-      usage: { promptTokens: usage.input_tokens, completionTokens: usage.output_tokens, totalTokens: usage.input_tokens + usage.output_tokens },
-      model: this.config.model,
-    };
+
+    return tracing.withSpan('anthropic.complete', async (spanId) => {
+      const systemPrompt = options?.systemPrompt ?? messages.find((m) => m.role === 'system')?.content ?? '';
+      const apiMessages = messages.filter((m) => m.role !== 'system');
+      const body: Record<string, unknown> = {
+        model,
+        messages: apiMessages.map((m) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content })),
+        max_tokens: maxTokens,
+        temperature: temp,
+      };
+      if (systemPrompt) body['system'] = systemPrompt;
+      const res = await this.fetchWithTimeout(`${this.baseUrl}/v1/messages`, body);
+      if (!res.ok) {
+        const text = await res.text();
+        throw new LLMError(`Anthropic error: ${text}`, 'anthropic', model, res.status);
+      }
+      const data = (await res.json()) as AnthropicResponse;
+      const usage = data.usage;
+      this.trackUsage(usage.input_tokens + usage.output_tokens);
+
+      const span = tracing.getSpan(spanId);
+      if (span) {
+        span.attributes['gen_ai.response.model'] = model;
+        span.attributes['gen_ai.usage.prompt_tokens'] = usage.input_tokens;
+        span.attributes['gen_ai.usage.completion_tokens'] = usage.output_tokens;
+      }
+
+      return {
+        content: data.content.filter((c) => c.type === 'text').map((c) => c.text).join(''),
+        usage: { promptTokens: usage.input_tokens, completionTokens: usage.output_tokens, totalTokens: usage.input_tokens + usage.output_tokens },
+        model,
+      };
+    }, attributes);
   }
 
   async *stream(_messages: LLMMessage[], _options?: CompletionOptions): AsyncIterable<LLMChunk> {

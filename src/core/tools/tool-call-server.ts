@@ -1,7 +1,6 @@
 import type { CompletionOptions, LLMMessage, LLMProvider, LLMResponse } from '../llm/provider.js';
-import type { JSONSchema, ToolCall } from '../types.js';
+import type { JSONSchema } from '../types.js';
 import { ToolRegistry } from './registry.js';
-import type { Tool } from './registry.js';
 
 export class ToolCallServer {
   constructor(

@@ -1,4 +1,4 @@
-import type { Task, Workflow, WorkflowResult } from './types.js';
+import type { Workflow, WorkflowResult } from './types.js';
 import type { SubAgent } from './sub-agent.js';
 import { MasterAgent } from './master-agent.js';
 import type { AgentConfig, MemoryStore } from './types.js';

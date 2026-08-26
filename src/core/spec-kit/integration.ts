@@ -1,5 +1,4 @@
 import { SpecKitCommands } from './commands.js';
-import type { CommandResult } from './commands.js';
 
 export interface ConstitutionResult { success: boolean; output: string; }
 export interface SpecResult { success: boolean; specPath?: string; output: string; }

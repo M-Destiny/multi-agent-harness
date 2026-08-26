@@ -84,6 +84,18 @@ export const SpecKitConfigSchema = z.object({
 });
 export type SpecKitConfig = z.infer<typeof SpecKitConfigSchema>;
 
+// ── Observability Config ────────────────────────────────────────────────────
+
+export const ObservabilityConfigSchema = z.object({
+  otel: z.object({
+    enabled: z.boolean().default(false),
+    serviceName: z.string().default('multi-agent-harness'),
+    exporter: z.enum(['grpc', 'http', 'console']).default('http'),
+    endpoint: z.string().url().optional(),
+  }).default({}),
+});
+export type ObservabilityConfig = z.infer<typeof ObservabilityConfigSchema>;
+
 // ── Root Harness Config ─────────────────────────────────────────────────────
 
 export const HarnessConfigSchema = z.object({
@@ -96,6 +108,7 @@ export const HarnessConfigSchema = z.object({
   }).default({}),
   memory: MemoryConfigSchema.default({}),
   logging: LoggingConfigSchema.default({}),
+  observability: ObservabilityConfigSchema.default({}),
   agents: z.object({
     maxConcurrent: z.number().int().min(1).default(5),
     defaultTimeoutMs: z.number().int().positive().default(120_000),
