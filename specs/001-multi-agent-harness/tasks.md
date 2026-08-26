@@ -24,7 +24,7 @@ This file tracks the outstanding issues and tasks for the `multi-agent-harness` 
   - Build lightweight web-based interface (React Flow/Cytoscape)
   - Implement time-travel state debugging and resume via checkpointer APIs
 
-- [ ] **Issue #11: [Enterprise] Multi-Tenant Architecture with RBAC, SSO, API Keys, Audit Logging**
+- [x] **Issue #11: [Enterprise] Multi-Tenant Architecture with RBAC, SSO, API Keys, Audit Logging**
   - Add tenant isolation database schemas (Postgres RLS/Redis Namespaces)
   - Add OIDC/SSO federated authentication and API key management
 
