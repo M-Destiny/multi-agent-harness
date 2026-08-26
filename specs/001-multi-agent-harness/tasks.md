@@ -4,11 +4,11 @@ This file tracks the outstanding issues and tasks for the `multi-agent-harness` 
 
 ## Open Tasks / Remaining Issues
 
-- [ ] **Issue #6: [Integration] A2A (Agent-to-Agent) Protocol Support**
-  - Implement full standard Agent-to-Agent protocol communication hooks
+- [x] **Issue #6: [Integration] A2A (Agent-to-Agent) Protocol Support**
+  - Implement A2A client delegation in MasterAgent and A2AClient
   - Verify message schema exchange and routing
 
-- [ ] **Issue #7: [Observability] OpenTelemetry Integration with GenAI Semantic Conventions**
+- [x] **Issue #7: [Observability] OpenTelemetry Integration with GenAI Semantic Conventions**
   - Integrate OpenTelemetry SDK
   - Map LLM requests, token counts, latency, and agent traces to GenAI Semantic Conventions
 
