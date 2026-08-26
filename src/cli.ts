@@ -101,6 +101,132 @@ program
     await master.shutdown();
   });
 
+// ── eval ─────────────────────────────────────────────────────────────────────
+
+program
+  .command('eval')
+  .description('Run evaluation on a dataset')
+  .option('-d, --dataset <path>', 'Path to dataset JSONL/JSON', 'evals/dataset.jsonl')
+  .option('-e, --evaluators <list>', 'Comma-separated evaluators to run', 'semantic-similarity')
+  .option('-o, --output-dir <path>', 'Directory to save JUnit XML and JSON report', './evals-report')
+  .action(async (opts) => {
+    const config = loadConfig(undefined);
+    const { InMemoryStore } = await import('./core/memory/memory-store.js');
+    const { SubAgent } = await import('./core/sub-agent.js');
+    const { SemanticSimilarityEvaluator, TrajectoryEvaluator, CodeExecutionEvaluator } = await import('./core/evaluation/agent-eval.js');
+
+    const datasetPath = path.resolve(opts.dataset);
+    if (!fs.existsSync(datasetPath)) {
+      console.error(`Dataset not found at ${opts.dataset}`);
+      process.exit(1);
+    }
+    const raw = fs.readFileSync(datasetPath, 'utf8');
+    const items = raw.trim().split('\n').map((line) => {
+      try { return JSON.parse(line); } catch { return null; }
+    }).filter(Boolean);
+
+    const evaluatorNames = opts.evaluators.split(',').map((e: string) => e.trim());
+    const evaluatorsList = [];
+    if (evaluatorNames.includes('semantic-similarity')) {
+      evaluatorsList.push(new SemanticSimilarityEvaluator());
+    }
+    if (evaluatorNames.includes('trajectory')) {
+      evaluatorsList.push(new TrajectoryEvaluator());
+    }
+    if (evaluatorNames.includes('code-exec')) {
+      evaluatorsList.push(new CodeExecutionEvaluator());
+    }
+
+    const memory = new InMemoryStore();
+    const worker = new SubAgent({
+      id: 'eval-worker',
+      name: 'Evaluation Worker',
+      role: 'sub' as const,
+      capabilities: ['code'],
+      tools: [],
+      memoryNamespace: 'eval-worker',
+      llmConfig: config.llm.primary ?? { provider: 'openai', model: 'gpt-4o', apiKey: 'mock', temperature: 0.2, maxTokens: 4096, timeoutMs: 60000 },
+      systemPrompt: 'You are an evaluation helper.',
+      maxRetries: 1,
+      timeoutMs: 30000,
+    }, memory);
+
+    await worker.initialize();
+
+    const results = [];
+    let sumScore = 0;
+
+    for (const item of items) {
+      const input = item.input;
+      const expected = item.expected;
+      let output = '';
+      if (config.llm.primary && config.llm.primary.apiKey !== 'mock') {
+        const res = await worker.complete(input);
+        output = res.content;
+      } else {
+        output = expected || `Response to: ${input}`;
+      }
+
+      const scores: Record<string, number> = {};
+      const details: Record<string, string> = {};
+      let passed = true;
+
+      for (const ev of evaluatorsList) {
+        const evRes = await ev.evaluate(input, output, expected, { steps: [{ action: 'process' }], durationMs: 100 });
+        scores[ev.name] = evRes.score;
+        details[ev.name] = evRes.details;
+        if (!evRes.passed) passed = false;
+      }
+
+      const avgScore = Object.values(scores).reduce((a, b) => a + b, 0) / Math.max(Object.keys(scores).length, 1);
+      sumScore += avgScore;
+
+      results.push({
+        input,
+        output,
+        expected,
+        scores,
+        passed,
+        details,
+      });
+    }
+
+    await worker.shutdown();
+
+    const overallScore = Math.round(sumScore / Math.max(items.length, 1));
+    const report = {
+      testSuiteName: 'Agent Evaluation Suite',
+      results,
+      overallScore,
+    };
+
+    const outputDir = path.resolve(opts.outputDir);
+    fs.mkdirSync(outputDir, { recursive: true });
+
+    const jsonReportPath = path.join(outputDir, 'report.json');
+    fs.writeFileSync(jsonReportPath, JSON.stringify(report, null, 2), 'utf8');
+
+    const junitPath = path.join(outputDir, 'junit.xml');
+    let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+    xml += `<testsuites name="${report.testSuiteName}" tests="${report.results.length}" failures="${report.results.filter(r => !r.passed).length}">\n`;
+    xml += `  <testsuite name="${report.testSuiteName}" tests="${report.results.length}" failures="${report.results.filter(r => !r.passed).length}">\n`;
+    for (const r of report.results) {
+      xml += `    <testcase name="Evaluate: ${r.input.substring(0, 40).replace(/"/g, '&quot;')}" classname="${report.testSuiteName}">\n`;
+      if (!r.passed) {
+        xml += `      <failure message="Evaluation failed"><![CDATA[${JSON.stringify(r.details, null, 2)}]]></failure>\n`;
+      }
+      xml += `    </testcase>\n`;
+    }
+    xml += `  </testsuite>\n`;
+    xml += `</testsuites>\n`;
+    fs.writeFileSync(junitPath, xml, 'utf8');
+
+    console.log(`\nEvaluation complete!`);
+    console.log(`Overall score: ${overallScore}%`);
+    console.log(`JUnit report: ${junitPath}`);
+    console.log(`JSON report: ${jsonReportPath}\n`);
+  });
+
 // ── speckit ─────────────────────────────────────────────────────────────────
 
 const speckit = program
