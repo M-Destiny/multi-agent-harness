@@ -16,7 +16,7 @@ This file tracks the outstanding issues and tasks for the `multi-agent-harness` 
   - Implement secure microVM/container provider interfaces
   - Support Docker (local) and E2B (cloud) sandbox executors for terminal and file actions
 
-- [ ] **Issue #9: [Evaluation] Agent Evaluation Harness (LLM-as-Judge, Trajectory, DeepEval/LangSmith Adapters)**
+- [x] **Issue #9: [Evaluation] Agent Evaluation Harness (LLM-as-Judge, Trajectory, DeepEval/LangSmith Adapters)**
   - Support pluggable trajectory evaluators and LLM-as-judge scoring
   - Add adapters for DeepEval, LangSmith, and Braintrust
 
