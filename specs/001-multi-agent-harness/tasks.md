@@ -36,7 +36,7 @@ This file tracks the outstanding issues and tasks for the `multi-agent-harness` 
   - Implement Zod/JSON Schema to function calling mapping
   - Add validation retry loop with feedback to the provider on schema failure
 
-- [ ] **Issue #14: [Observability] Cost Tracking, Budgets, Alerts & Hard Limits**
+- [x] **Issue #14: [Observability] Cost Tracking, Budgets, Alerts & Hard Limits**
   - Add token-based cost tracking at agent/thread/workflow levels
   - Implement Prometheus metrics and webhook alerts for threshold limits
 
