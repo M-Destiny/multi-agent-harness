@@ -20,7 +20,7 @@ This file tracks the outstanding issues and tasks for the `multi-agent-harness` 
   - Support pluggable trajectory evaluators and LLM-as-judge scoring
   - Add adapters for DeepEval, LangSmith, and Braintrust
 
-- [ ] **Issue #10: [DX] Visual Studio: Graph Inspector, Time-Travel Debugging, Drag-Drop Builder**
+- [x] **Issue #10: [DX] Visual Studio: Graph Inspector, Time-Travel Debugging, Drag-Drop Builder**
   - Build lightweight web-based interface (React Flow/Cytoscape)
   - Implement time-travel state debugging and resume via checkpointer APIs
 
@@ -28,7 +28,7 @@ This file tracks the outstanding issues and tasks for the `multi-agent-harness` 
   - Add tenant isolation database schemas (Postgres RLS/Redis Namespaces)
   - Add OIDC/SSO federated authentication and API key management
 
-- [ ] **Issue #12: [API] REST API Server (Fastify) with SSE/WebSocket Streaming, OpenAPI Docs**
+- [x] **Issue #12: [API] REST API Server (Fastify) with SSE/WebSocket Streaming, OpenAPI Docs**
   - Implement Fastify REST endpoint controller for workflow and agent CRUD
   - Add Server-Sent Events (SSE) and WebSocket streams for real-time monitoring
 
