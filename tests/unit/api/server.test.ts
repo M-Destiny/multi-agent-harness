@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { ApiServer } from '../../../src/core/api/server.js';
-import { InMemoryStore } from '../../../src/core/memory/memory-store.js';
 import { SqliteCheckpointer } from '../../../src/core/checkpointer/sqlite.js';
 import type { Workflow } from '../../../src/core/types.js';
 
@@ -8,11 +7,17 @@ describe('ApiServer & Studio Endpoints', () => {
   let checkpointer: SqliteCheckpointer;
   let server: ApiServer;
   let baseUrl: string;
+  let adminToken: string;
 
   beforeEach(async () => {
     checkpointer = new SqliteCheckpointer(':memory:');
-    server = new ApiServer(checkpointer, 0); // Bind to random free port
+    server = new ApiServer(checkpointer, 0, ':memory:', ':memory:'); // Bind to random free port
     baseUrl = await server.start();
+
+    // Setup tenant and keys for auth
+    await server.tenantManager.createTenant('default-tenant', 'Default Tenant');
+    const keyInfo = await server.tenantManager.createApiKey('default-tenant', 'admin', 'Test Admin Key');
+    adminToken = keyInfo.key;
   });
 
   afterEach(async () => {
@@ -20,7 +25,9 @@ describe('ApiServer & Studio Endpoints', () => {
   });
 
   it('GET /api/graph returns empty lists if no workflow active', async () => {
-    const res = await fetch(`${baseUrl}/api/graph`);
+    const res = await fetch(`${baseUrl}/api/graph`, {
+      headers: { Authorization: `Bearer ${adminToken}` }
+    });
     const data = await res.json();
     expect(data.nodes).toEqual([]);
     expect(data.edges).toEqual([]);
@@ -42,7 +49,9 @@ describe('ApiServer & Studio Endpoints', () => {
 
     server.setWorkflow(mockWorkflow);
 
-    const res = await fetch(`${baseUrl}/api/graph`);
+    const res = await fetch(`${baseUrl}/api/graph`, {
+      headers: { Authorization: `Bearer ${adminToken}` }
+    });
     const data = await res.json();
     expect(data.nodes).toHaveLength(2);
     expect(data.nodes[0].id).toBe('t1');
@@ -61,7 +70,9 @@ describe('ApiServer & Studio Endpoints', () => {
     });
 
     // List checkpoints
-    const res = await fetch(`${baseUrl}/api/checkpoints?threadId=t-1`);
+    const res = await fetch(`${baseUrl}/api/checkpoints?threadId=t-1`, {
+      headers: { Authorization: `Bearer ${adminToken}` }
+    });
     const list = await res.json();
     expect(list).toHaveLength(1);
     expect(list[0].checkpointId).toBe('cp-1');
@@ -69,7 +80,10 @@ describe('ApiServer & Studio Endpoints', () => {
     // Resume/Patch checkpoint state
     const patchRes = await fetch(`${baseUrl}/api/checkpoints/cp-1/resume?threadId=t-1`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        Authorization: `Bearer ${adminToken}`,
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify({ state: { val: 42 } })
     });
     const patchData = await patchRes.json();
