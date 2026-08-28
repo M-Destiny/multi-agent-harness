@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { CircuitBreaker, CircuitState } from '../../../src/core/resilience/circuit-breaker.js';
+import { CircuitBreaker, CircuitState } from '../../../src/resilience/circuit-breaker.ts';
 
 describe('CircuitBreaker', () => {
   let cb: CircuitBreaker;

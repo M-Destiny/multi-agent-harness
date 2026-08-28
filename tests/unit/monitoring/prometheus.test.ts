@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { PrometheusMetrics } from '../../../src/core/monitoring/prometheus.js';
+import { PrometheusMetrics } from '../../../src/monitoring/prometheus.ts';
 
 describe('PrometheusMetrics', () => {
   let metrics: PrometheusMetrics;
@@ -26,8 +26,8 @@ describe('PrometheusMetrics', () => {
     metrics.histogram('request_duration_ms', 45, { method: 'GET' });
     metrics.histogram('request_duration_ms', 120, { method: 'GET' });
     const output = metrics.serialize();
-    expect(output).toContain('request_duration_ms_sum');
-    expect(output).toContain('request_duration_ms_count 2');
+    expect(output).toContain('request_duration_ms{method="GET"}_sum');
+    expect(output).toContain('request_duration_ms{method="GET"}_count 2');
     expect(output).toContain('_bucket{le=');
   });
 

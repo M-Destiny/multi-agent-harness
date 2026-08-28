@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
-import { FallbackProvider } from '../../../src/core/llm/fallback.js';
-import { LLMError } from '../../../src/core/llm/provider.js';
-import type { LLMProvider } from '../../../src/core/types.js';
+import { FallbackProvider } from '../../../src/llm/fallback.ts';
+import { LLMError } from '../../../src/llm/provider.ts';
+import type { LLMProvider } from '../../../src/types.ts';
 
 function makeMockProvider(name: string, fail?: boolean, statusCode = 500): LLMProvider {
   return {

@@ -3,7 +3,7 @@ import { BaseAgent } from './types.js';
 import type { MemoryStore } from './memory/store.js';
 import type { SubAgent } from './sub-agent.js';
 import { TaskQueue } from './task.js';
-import { parallelMap } from '../utils/parallel.js';
+import { parallelMap } from './utils/parallel.ts';
 
 export class MasterAgent extends BaseAgent {
   private readonly _subAgents: SubAgent[] = [];

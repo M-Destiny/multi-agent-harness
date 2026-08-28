@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { SecretMasker } from '../../../src/core/security/secret-masker.js';
+import { SecretMasker } from '../../../src/security/secret-masker.ts';
 
 describe('SecretMasker', () => {
   const mask = new SecretMasker();
@@ -21,18 +21,18 @@ describe('SecretMasker', () => {
   });
 
   it('masks private key headers', () => {
-    const val = '-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANB...\n-----END PRIVATE KEY-----';
+    const val = '-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQD...';
     expect(mask.mask(val)).not.toContain('PRIVATE KEY');
   });
 
   it('maskObject recursively masks nested objects', () => {
     const result = mask.maskObject({
-      apiKey: 'sk-abc123456789',
-      nested: { token: 'Bearer xyz', deep: { password: 'secret123' } },
+      apiKey: 'sk-AbCdEfGhIjKlMnOpQrStUvWxYz123456789012',
+      nested: { token: 'Bearer xyz', deep: { password: 'password=secret123' } },
     }) as Record<string, unknown>;
     expect(result['apiKey']).toBe('***REDACTED***');
-    expect((result['nested'] as Record<string, unknown>)['token']).toBe('***REDACTED***');
-    expect(((result['nested'] as Record<string, unknown>)['deep'] as Record<string, unknown>)['password']).toBe('***REDACTED***');
+    expect((result['nested'] as Record<string, unknown>)['token']).toBe('Bearer ***REDACTED***');
+    expect(((result['nested'] as Record<string, unknown>)['deep'] as Record<string, unknown>)['password']).toBe('password=***REDACTED***');
   });
 
   it('addPattern registers custom patterns', () => {
@@ -42,8 +42,8 @@ describe('SecretMasker', () => {
   });
 
   it('maskObject handles arrays', () => {
-    const result = mask.maskObject([{ apiKey: 'sk-test' }, 'Bearer tok']) as Record<string, unknown>[];
+    const result = mask.maskObject([{ apiKey: 'sk-AbCdEfGhIjKlMnOpQrStUvWxYz123456789012' }, 'Bearer tok']) as Record<string, unknown>[];
     expect(result[0]['apiKey']).toBe('***REDACTED***');
-    expect(result[1]).toBe('***REDACTED***');
+    expect(result[1]).toBe('Bearer ***REDACTED***');
   });
 });

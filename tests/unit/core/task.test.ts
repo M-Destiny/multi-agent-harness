@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { TaskQueue } from '../../../src/core/task.js';
-import { createTask } from '../../../src/core/types.js';
+import { TaskQueue } from '../../../src/task.ts';
+import { createTask } from '../../../src/types.ts';
 
 describe('TaskQueue', () => {
   let q: TaskQueue;

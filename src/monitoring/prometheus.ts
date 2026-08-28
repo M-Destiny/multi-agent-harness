@@ -57,25 +57,29 @@ export class PrometheusMetrics {
   serialize(): string {
     const lines: string[] = [];
     for (const [key, m] of this.counters) {
-      lines.push(`# TYPE ${m.type} counter`);
-      lines.push(`# HELP ${m.type} counter`);
+      const metricName = key.split('{')[0];
+      lines.push(`# TYPE ${metricName} counter`);
+      lines.push(`# HELP ${metricName} counter`);
       lines.push(`${key} ${m.value}`);
     }
     for (const [key, m] of this.gauges) {
-      lines.push(`# TYPE ${m.type} gauge`);
-      lines.push(`# HELP ${m.type} gauge`);
+      const metricName = key.split('{')[0];
+      lines.push(`# TYPE ${metricName} gauge`);
+      lines.push(`# HELP ${metricName} gauge`);
       lines.push(`${key} ${m.value}`);
     }
     for (const [key, m] of this.histograms) {
-      lines.push(`# TYPE ${m.type} histogram`);
-      lines.push(`# HELP ${m.type} histogram`);
+      const metricName = key.split('{')[0];
+      lines.push(`# TYPE ${metricName} histogram`);
+      lines.push(`# HELP ${metricName} histogram`);
       for (const b of m.buckets) lines.push(`${key}_bucket{le="${b.le}"} ${b.count}`);
       lines.push(`${key}_sum ${m.sum}`);
       lines.push(`${key}_count ${m.count}`);
     }
     for (const [key, m] of this.summaries) {
-      lines.push(`# TYPE ${m.type} summary`);
-      lines.push(`# HELP ${m.type} summary`);
+      const metricName = key.split('{')[0];
+      lines.push(`# TYPE ${metricName} summary`);
+      lines.push(`# HELP ${metricName} summary`);
       lines.push(`${key}_sum ${m.sum}`);
       lines.push(`${key}_count ${m.count}`);
     }

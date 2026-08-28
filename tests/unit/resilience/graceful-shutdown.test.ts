@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { GracefulShutdownManager } from '../../../src/core/resilience/graceful-shutdown.js';
+import { GracefulShutdownManager } from '../../../src/resilience/graceful-shutdown.ts';
 
 describe('GracefulShutdownManager', () => {
   let manager: GracefulShutdownManager;
