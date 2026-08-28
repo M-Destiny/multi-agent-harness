@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { InMemoryStore } from '../../../src/core/memory/memory-store.js';
-import { SqliteStore } from '../../../src/core/memory/sqlite-store.js';
-import { TaskQueue } from '../../../src/core/task.js';
-import { createTask, createWorkflow } from '../../../src/core/types.js';
+import { InMemoryStore } from '../../../src/memory/memory-store.ts';
+import { SqliteStore } from '../../../src/memory/sqlite-store.ts';
+import { TaskQueue } from '../../../src/task.ts';
+import { createTask, createWorkflow } from '../../../src/types.ts';
 
 describe('InMemoryStore', () => {
   it('should set and get values', async () => {

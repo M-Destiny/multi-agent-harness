@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import { retry } from '../../../src/utils/retry.js';
-import { parallelMap } from '../../../src/utils/parallel.js';
+import { retry } from '../../../src/utils/retry.ts';
+import { parallelMap } from '../../../src/utils/parallel.ts';
 
 describe('retry', () => {
   it('succeeds on first try', async () => {

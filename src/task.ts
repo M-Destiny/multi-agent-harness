@@ -12,7 +12,11 @@ export class TaskQueue {
   dequeue(): Task | null {
     for (const task of this.tasks.values()) {
       if (task.status !== 'pending') continue;
-      if (this.depsComplete(task)) return task;
+      if (this.depsComplete(task)) {
+        task.status = 'running';
+        task.startedAt = new Date();
+        return task;
+      }
     }
     return null;
   }

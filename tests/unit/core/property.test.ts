@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { TaskQueue } from '../../../src/core/task.js';
-import { createTask } from '../../../src/core/types.js';
+import { TaskQueue } from '../../../src/task.ts';
+import { createTask } from '../../../src/types.ts';
 
 function generateDag(numTasks: number, sparsity = 0.3): string[] {
   // Generates a set of task IDs where ~sparsity fraction have no dependencies

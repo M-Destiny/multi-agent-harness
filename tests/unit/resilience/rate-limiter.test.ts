@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { TokenBucketRateLimiter, RateLimitError } from '../../../src/core/resilience/rate-limiter.js';
+import { TokenBucketRateLimiter, RateLimitError } from '../../../src/resilience/rate-limiter.ts';
 
 describe('TokenBucketRateLimiter', () => {
   it('acquire returns true when tokens available', () => {

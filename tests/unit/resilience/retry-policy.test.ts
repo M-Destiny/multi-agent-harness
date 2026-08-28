@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { RetryPolicy } from '../../../src/core/resilience/retry-policy.js';
+import { RetryPolicy } from '../../../src/resilience/retry-policy.ts';
 
 describe('RetryPolicy', () => {
   it('succeeds on first try', async () => {
@@ -27,7 +27,7 @@ describe('RetryPolicy', () => {
       attempts++;
       throw new Error('permanent');
     })).rejects.toThrow('permanent');
-    expect(attempts).toBe(1); // first attempt + 1 retry = 2 total
+    expect(attempts).toBe(2); // first attempt + 1 retry = 2 total
   });
 
   it('onRetry callback fires', async () => {
@@ -41,8 +41,8 @@ describe('RetryPolicy', () => {
       attempts++;
       if (attempts < 3) throw new Error('transient');
       return 'done';
-    })).rejects.toThrow('transient');
-    expect(retries.length).toBe(2); // 2 retries before final failure
+    })).resolves.toBe('done'); // succeeds on 3rd attempt
+    expect(retries.length).toBe(2); // 2 retries before success
   });
 
   it('retryable filter skips non-retryable errors', async () => {

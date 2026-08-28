@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { SubAgent } from '../../../src/core/sub-agent.js';
-import { MasterAgent } from '../../../src/core/master-agent.js';
-import { InMemoryStore } from '../../../src/core/memory/memory-store.js';
-import { createTask, createWorkflow } from '../../../src/core/types.js';
-import type { AgentConfig, LLMProvider } from '../../../src/core/types.js';
+import { SubAgent } from '../../../src/sub-agent.ts';
+import { MasterAgent } from '../../../src/master-agent.ts';
+import { InMemoryStore } from '../../../src/memory/memory-store.ts';
+import { createTask, createWorkflow } from '../../../src/types.ts';
+import type { AgentConfig, LLMProvider } from '../../../src/types.ts';
 
 const mockLLMConfig = {
   provider: 'openai' as const,

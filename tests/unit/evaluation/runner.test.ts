@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { Evaluator } from '../../../src/core/evaluation/runner.js';
-import { TypeCheckGate, LintGate, TestGate } from '../../../src/core/evaluation/gates.js';
-import type { QualityGate, TaskResult } from '../../../src/core/evaluation/types.js';
+import { Evaluator } from '../../../src/evaluation/runner.ts';
+import { TypeCheckGate, LintGate, TestGate } from '../../../src/evaluation/gates.ts';
+import type { QualityGate, TaskResult } from '../../../src/evaluation/types.ts';
 
 const passGate: QualityGate = {
   name: 'pass-gate',
