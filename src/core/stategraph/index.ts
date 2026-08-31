@@ -207,6 +207,103 @@ export class CompiledGraph<S extends Record<string, unknown>> {
     };
   }
 
+  async *stream(input: S, config: { threadId: string }): AsyncGenerator<{ state: S; node: string; step: number }> {
+    const threadId = config.threadId;
+    let state = input;
+    let currentNode = this.graph.getEntryPoint();
+    let step = 0;
+
+    while (currentNode) {
+      const nodeConfig = this.graph.getNodes().get(currentNode);
+      if (!nodeConfig) throw new Error(`Node "${currentNode}" not found`);
+
+      // Check interruptBefore
+      if (this.options.interruptBefore?.includes(currentNode)) {
+        const checkpoint = await this.saveCheckpoint(threadId, state, currentNode, 'interrupt_before', step);
+        const interrupt = new Error(`Graph interrupted at ${currentNode}`) as GraphInterrupt;
+        interrupt.threadId = threadId;
+        interrupt.checkpointId = checkpoint.checkpointId;
+        interrupt.interruptNode = currentNode;
+        interrupt.state = state;
+        interrupt.status = 'interrupt_before';
+        throw interrupt;
+      }
+
+      // Execute node
+      const partial = await nodeConfig.fn(state);
+      state = { ...state, ...partial } as S;
+      step++;
+
+      // Yield state after each node execution
+      yield { state, node: currentNode, step };
+
+      // Check interruptAfter
+      if (this.options.interruptAfter?.includes(currentNode)) {
+        const checkpoint = await this.saveCheckpoint(threadId, state, currentNode, 'interrupt_after', step);
+        const interrupt = new Error(`Graph interrupted at ${currentNode}`) as GraphInterrupt;
+        interrupt.threadId = threadId;
+        interrupt.checkpointId = checkpoint.checkpointId;
+        interrupt.interruptNode = currentNode;
+        interrupt.state = state;
+        interrupt.status = 'interrupt_after';
+        throw interrupt;
+      }
+
+      // Check if this is a finish point - if so, we're done after this node
+      if (this.graph.getFinishPoints().has(currentNode)) {
+        break;
+      }
+
+      // Determine next node
+      const nextNode = this.getNextNode(currentNode, state);
+      if (!nextNode) break;
+      currentNode = nextNode;
+    }
+
+    // Final checkpoint
+    if (this.checkpointer && threadId) {
+      const finalNode = currentNode ?? 'end';
+      await this.saveCheckpoint(threadId, state, finalNode, 'completed', step);
+    }
+  }
+
+  async updateState(config: { threadId: string }, stateUpdate: Partial<S>): Promise<StateSnapshot<S> | null> {
+    if (!this.checkpointer) throw new Error('Checkpointer required for updateState');
+    
+    const checkpoint = await this.checkpointer.get(config.threadId);
+    if (!checkpoint) return null;
+
+    const currentState = checkpoint.state as S;
+    const updatedState = { ...currentState, ...stateUpdate } as S;
+
+    // Save updated state as new checkpoint
+    const newCheckpoint: Checkpoint = {
+      threadId: config.threadId,
+      checkpointId: crypto.randomUUID(),
+      state: updatedState,
+      metadata: {
+        ...checkpoint.metadata,
+        step: checkpoint.metadata.step,
+        timestamp: new Date(),
+        tags: [...(checkpoint.metadata.tags ?? []), 'state_update'],
+      },
+      createdAt: new Date(),
+    };
+
+    await this.checkpointer.put(newCheckpoint);
+
+    return {
+      values: updatedState,
+      next: checkpoint.metadata.node ? [checkpoint.metadata.node] : [],
+      tasks: [],
+      metadata: { 
+        checkpointId: newCheckpoint.checkpointId, 
+        step: checkpoint.metadata.step,
+        tags: newCheckpoint.metadata.tags,
+      },
+    };
+  }
+
   private getNextNode(currentNode: string, state: S): string | null {
     const nodeConfig = this.graph.getNodes().get(currentNode);
     if (!nodeConfig) return null;
