@@ -31,6 +31,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "better-sqlite3": "^11.5.0",
     "commander": "^12.1.0",
     "js-yaml": "^4.1.0",
@@ -43,12 +44,12 @@
     "@types/node": "^22.0.0",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
+    "@vitest/coverage-v8": "^2.0.0",
     "eslint": "^9.0.0",
     "globals": "^15.0.0",
-    "typescript": "^5.5.0",
-    "vitest": "^2.0.0",
     "tsx": "^4.19.0",
-    "@vitest/coverage-v8": "^2.0.0"
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0"
   },
   "engines": {
     "node": ">=20.0.0"
